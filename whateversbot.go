@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+	"strconv"
 	"time"
 
 	vkapi "github.com/vayw/gosocial"
@@ -13,10 +14,11 @@ import (
 )
 
 type Config struct {
-	VK         VKconf
-	TG         TGconf
-	StatusFile string
-	Save       int
+	VK           VKconf
+	TG           TGconf
+	StatusFile   string
+	Save         int
+	PollInterval int
 }
 
 type VKconf struct {
@@ -101,23 +103,51 @@ func main() {
 func vkevent(bot *tgbotapi.BotAPI, conf *Config, vkcli *vkapi.VKClient) {
 	for {
 		updates, err := (vkcli.GetUpdates())
+		log.Print("::vkevent:: updates", updates)
 		if err != 0 {
-			log.Printf("vk update err: %d", err)
+			log.Printf("::vkevent:: update err: %d", err)
 		}
 		if len(updates) != 0 {
+			var text string
 			for _, v := range updates {
-				var text string
-				switch v.Type {
-				case "group_join":
-					text = fmt.Sprintf("id%d вступил в группу", v.EventObj.UID)
-				case "group_leave":
-					text = fmt.Sprintf("id%d вышел из группы", v.EventObj.UID)
+				strid := strconv.Itoa(v.EventObj.UID)
+				userinfo, err := vkcli.GetUserData(strid)
+				if err != nil {
+					log.Printf("::vkevent:: update err: %d", err)
+					text = fmt.Sprintf("%d %s", v.EventObj.UID, v.Type)
+				} else {
+					text = get_action(v.Type, userinfo[0])
 				}
 				msg := tgbotapi.NewMessage(conf.TG.Channel, text)
+				log.Printf("::vkevent:: message= %s", text)
 				bot.Send(msg)
 			}
 		}
+		duration := time.Duration(Conf.PollInterval) * time.Minute
+		time.Sleep(duration)
 	}
+}
+
+func get_action(event_type string, userinfo vkapi.User) string {
+	var text, action string
+	switch event_type {
+	case "group_join":
+		if userinfo.Sex == 1 {
+			action = "вступила в группу"
+		} else {
+			action = "вступил в группу"
+		}
+	case "group_leave":
+		if userinfo.Sex == 1 {
+			action = "вышла из группы"
+		} else {
+			action = "вышел из группы"
+		}
+	}
+	text = fmt.Sprintf("(id%d) %s %s %s\n%s", userinfo.UID, userinfo.FirstName,
+		userinfo.LastName, action, userinfo.Photo100)
+
+	return text
 }
 
 func SaveStatus(vkcli *vkapi.VKClient) {
