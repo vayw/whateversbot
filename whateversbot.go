@@ -111,7 +111,7 @@ func vkevent(bot *tgbotapi.BotAPI, conf *Config, vkcli *vkapi.VKClient) {
 			var text string
 			for _, v := range updates {
 				strid := strconv.Itoa(v.EventObj.UID)
-				userinfo, err := vkcli.GetUserData(strid)
+				userinfo, err := vkcli.GetUserData(strid, "photo_100,sex")
 				if err != nil {
 					log.Printf("::vkevent:: update err: %d", err)
 					text = fmt.Sprintf("%d %s", v.EventObj.UID, v.Type)
