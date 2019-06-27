@@ -85,19 +85,36 @@ func main() {
 		if update.Message == nil {
 			continue
 		}
-
-		if isfriend(update.Message.From.ID, &Conf) {
-			msg := tgbotapi.NewMessage(update.Message.Chat.ID, update.Message.Text)
-			msg.ReplyToMessageID = update.Message.MessageID
-			bot.Send(msg)
-		} else {
-			msg := tgbotapi.NewMessage(update.Message.Chat.ID, "sorry, papa told me to not talk with strangers")
-			msg.ReplyToMessageID = update.Message.MessageID
-			bot.Send(msg)
-		}
-
+		botAnswer(update.Message, bot, &Conf, &vkcli)
 		log.Printf("[%s] %s", update.Message.From.UserName, update.Message.Text)
 	}
+}
+
+func botAnswer(msg *tgbotapi.Message, bot *tgbotapi.BotAPI, conf *Config,
+	vkcli *vkapi.VKClient) {
+	newmsg := tgbotapi.NewMessage(msg.Chat.ID, "")
+	if msg.IsCommand() {
+		switch msg.Command() {
+		case "count":
+			count, err := vkcli.MembersCount()
+			if err != nil {
+				newmsg.Text = "что-то не получилось."
+			}
+			newmsg.Text = fmt.Sprintf("У нас сейчаc %d участников", count)
+			newmsg.ReplyToMessageID = msg.MessageID
+		default:
+			newmsg.Text = "комманды: /count"
+		}
+	} else {
+		if isfriend(msg.From.ID, conf) {
+			newmsg.Text = msg.Text
+			newmsg.ReplyToMessageID = msg.MessageID
+		} else {
+			newmsg.Text = "извините, но мы не друзья"
+			newmsg.ReplyToMessageID = msg.MessageID
+		}
+	}
+	bot.Send(newmsg)
 }
 
 func vkevent(bot *tgbotapi.BotAPI, conf *Config, vkcli *vkapi.VKClient) {
