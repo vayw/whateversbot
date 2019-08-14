@@ -100,7 +100,7 @@ func botAnswer(msg *tgbotapi.Message, bot *tgbotapi.BotAPI, conf *Config,
 			if err != nil {
 				newmsg.Text = "что-то не получилось."
 			}
-			newmsg.Text = fmt.Sprintf("У нас сейчаc %d участников", count)
+			newmsg.Text = fmt.Sprintf("количество участников в группе: %d", count)
 			newmsg.ReplyToMessageID = msg.MessageID
 		default:
 			newmsg.Text = "комманды: /count"
