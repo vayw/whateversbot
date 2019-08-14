@@ -33,12 +33,19 @@ func sleep(until int64) time.Duration {
 }
 
 func nestandart(bot *tgbotapi.BotAPI, conf *Config) {
+	var api_err_sleep int64 = 10
 	var info APIResponse
 	for {
 		resp, err := http.Get(URL)
-		defer resp.Body.Close()
 		if err != nil {
 			logger.Print("[ERR} ", err)
+		}
+		if resp != nil {
+			defer resp.Body.Close()
+		} else {
+			time.Sleep(sleep(api_err_sleep))
+			api_err_sleep += 1
+			continue
 		}
 		body, _ := ioutil.ReadAll(resp.Body)
 		jsonErr := json.Unmarshal([]byte(body), &info)
