@@ -119,10 +119,14 @@ func botAnswer(msg *tgbotapi.Message, bot *tgbotapi.BotAPI, conf *Config,
 
 func vkevent(bot *tgbotapi.BotAPI, conf *Config, vkcli *vkapi.VKClient) {
 	for {
-		updates, err := (vkcli.GetUpdates())
+		duration := time.Duration(Conf.PollInterval) * time.Minute
+		updates, err := vkcli.GetUpdates()
 		log.Print("::vkevent:: updates", updates)
-		if err != 0 {
+		if err != nil {
 			log.Printf("::vkevent:: update err: %d", err)
+			_ = vkcli.GetLongPollServer()
+			time.Sleep(duration)
+			continue
 		}
 		if len(updates) != 0 {
 			var text string
@@ -140,7 +144,6 @@ func vkevent(bot *tgbotapi.BotAPI, conf *Config, vkcli *vkapi.VKClient) {
 				bot.Send(msg)
 			}
 		}
-		duration := time.Duration(Conf.PollInterval) * time.Minute
 		time.Sleep(duration)
 	}
 }
@@ -169,7 +172,7 @@ func get_action(event_type string, userinfo vkapi.User) string {
 
 func SaveStatus(vkcli *vkapi.VKClient) {
 	for {
-		if vkcli.TS != Stat.VKTS {
+		if (vkcli.TS != Stat.VKTS) && (vkcli.TS != "") {
 			Stat.VKTS = vkcli.TS
 			st, _ := json.MarshalIndent(Stat, "", " ")
 			err := ioutil.WriteFile(Conf.StatusFile, st, 0644)
