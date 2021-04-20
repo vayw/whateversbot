@@ -132,7 +132,7 @@ func vkevent(bot *tgbotapi.BotAPI, conf *Config, vkcli *vkapi.VKClient) {
 			var text string
 			for _, v := range updates {
 				strid := strconv.Itoa(v.EventObj.UID)
-				userinfo, err := vkcli.GetUserData(strid, "photo_100,sex")
+				userinfo, err := vkcli.GetUserData(strid, "sex")
 				if err != nil {
 					log.Printf("::vkevent:: update err: %d", err)
 					text = fmt.Sprintf("%d %s", v.EventObj.UID, v.Type)
@@ -164,8 +164,8 @@ func get_action(event_type string, userinfo vkapi.User) string {
 			action = "вышел из группы"
 		}
 	}
-	text = fmt.Sprintf("(id%d) %s %s %s\n%s", userinfo.UID, userinfo.FirstName,
-		userinfo.LastName, action, userinfo.Photo100)
+	text = fmt.Sprintf("%s %s %s\nhttps://vk.com/id%d", userinfo.FirstName,
+		userinfo.LastName, action, userinfo.UID)
 
 	return text
 }
