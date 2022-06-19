@@ -9,8 +9,8 @@ import (
 	"strconv"
 	"time"
 
+	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	vkapi "github.com/vayw/gosocial"
-	tgbotapi "gopkg.in/telegram-bot-api.v4"
 )
 
 type Config struct {
@@ -28,7 +28,7 @@ type VKconf struct {
 
 type TGconf struct {
 	API     string
-	Friends []int
+	Friends []int64
 	Channel int64
 }
 
@@ -36,7 +36,7 @@ type Status struct {
 	VKTS string
 }
 
-func isfriend(id int, conf *Config) bool {
+func isfriend(id int64, conf *Config) bool {
 	for _, friend := range conf.TG.Friends {
 		if friend == id {
 			return true
@@ -76,10 +76,9 @@ func main() {
 		vkcli.TS = Stat.VKTS
 	}
 	go vkevent(bot, &Conf, &vkcli)
-	go nestandart(bot, &Conf)
 	go SaveStatus(&vkcli)
 
-	updates, err := bot.GetUpdatesChan(u)
+	updates := bot.GetUpdatesChan(u)
 
 	for update := range updates {
 		if update.Message == nil {
@@ -102,19 +101,25 @@ func botAnswer(msg *tgbotapi.Message, bot *tgbotapi.BotAPI, conf *Config,
 			}
 			newmsg.Text = fmt.Sprintf("количество участников в группе: %d", count)
 			newmsg.ReplyToMessageID = msg.MessageID
+		case "hello":
+			newmsg.Text = "hello!"
+			newmsg.ReplyMarkup = NumericKeyboard
 		default:
-			newmsg.Text = "комманды: /count"
+			newmsg.ReplyMarkup = NumericKeyboard
 		}
 	} else {
 		if isfriend(msg.From.ID, conf) {
 			newmsg.Text = msg.Text
 			newmsg.ReplyToMessageID = msg.MessageID
 		} else {
+			log.Printf("%d", msg.From.ID)
 			newmsg.Text = "извините, но мы не друзья"
 			newmsg.ReplyToMessageID = msg.MessageID
 		}
 	}
-	bot.Send(newmsg)
+	if _, err := bot.Send(newmsg); err != nil {
+		log.Println(err)
+	}
 }
 
 func vkevent(bot *tgbotapi.BotAPI, conf *Config, vkcli *vkapi.VKClient) {
